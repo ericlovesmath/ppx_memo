@@ -1,10 +1,12 @@
 let[@memo] double x =
   Printf.printf "Calculating (double %d)\n" x;
   x * 2
+;;
 
 let[@memo] add x y =
   Printf.printf "Calculating (add %d %d)\n" x y;
   x + y
+;;
 
 let%expect_test "double test" =
   let test n = print_endline (Int.to_string (double n)) in
@@ -23,6 +25,7 @@ let%expect_test "double test" =
     20
     20
     |}]
+;;
 
 let%expect_test "add test" =
   let test x y = print_endline (Int.to_string (add x y)) in
@@ -42,3 +45,4 @@ let%expect_test "add test" =
     6
     7
     |}]
+;;

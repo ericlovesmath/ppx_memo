@@ -4,6 +4,11 @@ open Ast_builder.Default
 
 let tag = "memo"
 
+(* TODO: Is there an automatic way to filter / find this *)
+let memo_attribute =
+  Attribute.declare tag Attribute.Context.value_binding Ast_pattern.(pstr nil) ()
+;;
+
 (** Deconstructs function into list of [args] and [body] *)
 let collect_args_and_body expr =
   match expr.pexp_desc with
@@ -61,10 +66,6 @@ let expand_memo ~loc expr =
 ;;
 
 let transform_value_binding vb =
-  (* TODO: Is there an automatic way to filter / find this *)
-  let memo_attribute =
-    Attribute.declare tag Attribute.Context.value_binding Ast_pattern.(pstr nil) ()
-  in
   let remove_memo_attributes attrs =
     List.filter ~f:(fun attr -> String.( <> ) attr.attr_name.txt tag) attrs
   in

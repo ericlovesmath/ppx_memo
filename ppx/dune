@@ -4,4 +4,4 @@
  (kind ppx_rewriter)
  (libraries core ppxlib)
  (preprocess
-  (pps ppxlib.metaquot)))
+  (pps ppxlib.metaquot ppx_hash)))

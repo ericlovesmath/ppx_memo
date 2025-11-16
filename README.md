@@ -27,4 +27,18 @@ let%expect_test "Test" =
 - Add `let%expect_test`'s to dump AST form directly
 - Attempt to remove full `Core` dependency
 - `[@memo]` only works on first argument, rest must be un/packaged into a tuple
-- Implement `[@memo.recursive]` to use `Core.Memo.recursive`
+- Implement `[@memo.rec]` to use `Core.Memo.recursive`
+- Allow `let[@memo] f (x : int) = ...` typing syntax
+- Allow `function` form
+- Derive the `hashable` function if arguments are annotated with a type
+
+    - For example, `let[@memo.rec] rec f (x : int)` derives the type
+
+    ```ocaml
+    module M = Hashable.Make (struct
+      type t = int [@@deriving hash, compare, sexp]
+    end)
+
+    let[@memo.rec M.hashable] rec fib (x : int) = ...
+    ;;
+    ```

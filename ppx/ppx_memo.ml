@@ -2,18 +2,7 @@ open Core
 open Ppxlib
 open Ast_builder.Default
 
-let has_attribute name attrs =
-  List.exists ~f:(fun attr -> String.equal attr.attr_name.txt name) attrs
-;;
-
-(* TODO: Is there an automatic way to filter this *)
-let remove_memo_attributes attrs =
-  List.filter
-    ~f:(fun attr ->
-      let name = attr.attr_name.txt in
-      not (String.equal name "memo"))
-    attrs
-;;
+let tag = "memo"
 
 (** Deconstructs function into list of [args] and [body] *)
 let collect_args_and_body expr =
@@ -30,17 +19,14 @@ let collect_args_and_body expr =
     in
     patterns, body
   | Pexp_function (_, _, Pfunction_cases (_, fb_loc, _)) ->
-    (* This handles `function | p1 -> e1 | ...`. We disallow it for simplicity. *)
     Location.raise_errorf
       ~loc:fb_loc
       "Memoization with the `function` keyword is not supported. Use `fun x -> match x \
        with ...` instead."
-  | _ ->
-    (* This is the base case for a value that is not a function. *)
-    [], expr
+  | _ -> Location.raise_errorf ~loc:expr.pexp_loc "Only functions can be memoized"
 ;;
 
-(** TODO: Generate fresh variable names *)
+(** TODO: Handle other cases *)
 let expr_of_pat ~loc pat =
   match pat.ppat_desc with
   | Ppat_var { txt; _ } -> evar ~loc txt
@@ -57,7 +43,8 @@ let expr_of_pat ~loc pat =
 let expand_memo ~loc expr =
   let patterns, body = collect_args_and_body expr in
   match patterns with
-  | [] | [ _ ] -> [%expr Core.Memo.general [%e expr]]
+  | [] -> Location.raise_errorf ~loc:body.pexp_loc "Cannot memoize constant value"
+  | [ _ ] -> [%expr Core.Memo.general [%e expr]]
   | _ ->
     let tuple_pat = ppat_tuple ~loc patterns in
     let arg_exprs = List.map ~f:(expr_of_pat ~loc) patterns in
@@ -73,11 +60,14 @@ let expand_memo ~loc expr =
       [%e outer_fun]]
 ;;
 
-let memo_attribute =
-  Attribute.declare "memo" Attribute.Context.value_binding Ast_pattern.(pstr nil) ()
-;;
-
 let transform_value_binding vb =
+  (* TODO: Is there an automatic way to filter / find this *)
+  let memo_attribute =
+    Attribute.declare tag Attribute.Context.value_binding Ast_pattern.(pstr nil) ()
+  in
+  let remove_memo_attributes attrs =
+    List.filter ~f:(fun attr -> String.( <> ) attr.attr_name.txt tag) attrs
+  in
   match Attribute.get memo_attribute vb with
   | None -> vb
   | Some () ->
@@ -102,4 +92,4 @@ let memo_mapper =
   end
 ;;
 
-let () = Driver.register_transformation "memo" ~impl:memo_mapper#structure
+let () = Driver.register_transformation tag ~impl:memo_mapper#structure
